@@ -4,21 +4,21 @@ docling==2.77.0
 FlagEmbedding==1.2.10
 
 # LLM frameworks
-langchain==0.1.10
-langchain-anthropic==0.1.8
-langchain-openai==0.0.8
-langgraph==0.2.5
+langchain>=0.1.10
+langchain-anthropic>=0.1.8
+langchain-openai>=0.0.8
+langgraph>=0.2.5
 
 # Web UI
 streamlit==1.30.0
 
 # Document export
-python-docx==1.1.0
+python-docx>=1.1.2
 reportlab==4.0.9
 
 # Utilities
-pydantic==2.6.0
-pydantic-settings==2.1.0
+pydantic>=2.6.0
+pydantic-settings>=2.3.0
 structlog==24.1.0
 tenacity==8.2.3
 python-dotenv==1.0.0
