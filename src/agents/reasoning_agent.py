@@ -64,11 +64,11 @@ class ReasoningAgent(BaseAgent):
 分析检索到的文档是否足够撰写当前章节。
 
 输出格式（JSON）：
-{
+{{
   "is_sufficient": true/false,
   "reasoning": "判断理由",
   "missing_info": "缺失的信息（如果不充分）"
-}"""),
+}}"""),
             ("user", """需求：{requirement}
 
 当前章节：{section}
