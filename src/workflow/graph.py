@@ -86,10 +86,16 @@ def should_continue_retrieval(state: AgentState) -> str:
     """Determine if retrieval should continue."""
     iteration_count = state.get("iteration_count", 0)
     is_sufficient = state.get("is_sufficient", False)
+    has_sufficient_context = state.get("has_sufficient_context", False)
 
-    # Max 5 iterations per section
-    if iteration_count >= 5:
+    # Max 2 iterations per section (降低迭代次数，节省 Token)
+    if iteration_count >= 2:
         logger.info("retrieval_stopped", reason="max_iterations")
+        return "proceed"
+
+    # 如果已有足够上下文（本地或网络），直接进入写作
+    if has_sufficient_context:
+        logger.info("retrieval_stopped", reason="sufficient_context")
         return "proceed"
 
     if is_sufficient:
