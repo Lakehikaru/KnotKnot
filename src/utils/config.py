@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     # API Keys
     anthropic_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
+    openai_api_base: Optional[str] = None
 
     # Storage
     chroma_path: str = "./data/chroma_db"

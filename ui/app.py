@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import streamlit as st
 from src.utils.logger import setup_logging, get_logger
 from src.retrieval.hybrid_search import HybridSearcher
-from src.agents.planning_agent import PlanningAgent
+from src.workflow.graph import create_workflow
 from src.llm.cost_tracker import CostTracker
 
 # Setup logging
@@ -26,8 +26,8 @@ st.set_page_config(
 # Initialize session state
 if 'searcher' not in st.session_state:
     st.session_state.searcher = None
-if 'planning_agent' not in st.session_state:
-    st.session_state.planning_agent = None
+if 'workflow' not in st.session_state:
+    st.session_state.workflow = None
 
 
 def init_components():
@@ -36,9 +36,9 @@ def init_components():
         with st.spinner("初始化检索系统..."):
             st.session_state.searcher = HybridSearcher()
 
-    if st.session_state.planning_agent is None:
-        with st.spinner("初始化规划 Agent..."):
-            st.session_state.planning_agent = PlanningAgent()
+    if st.session_state.workflow is None:
+        with st.spinner("初始化 Agent 工作流..."):
+            st.session_state.workflow = create_workflow()
 
 
 # Main UI
@@ -109,34 +109,89 @@ with tab1:
     if st.button("🚀 开始生成", type="primary", use_container_width=True):
         if not requirement:
             st.error("请输入需求描述！")
-        elif not st.session_state.planning_agent:
+        elif not st.session_state.workflow:
             st.error("请先初始化系统！")
         else:
-            with st.spinner("正在规划文档结构..."):
-                try:
-                    # Run planning agent
-                    state = {
-                        "requirement": requirement,
-                        "doc_type": doc_type,
-                        "word_count": word_count
-                    }
+            try:
+                # Initialize state
+                initial_state = {
+                    "requirement": requirement,
+                    "doc_type": doc_type,
+                    "outline": "",
+                    "sections": [],
+                    "current_section": 0,
+                    "retrieved_docs": [],
+                    "is_sufficient": False,
+                    "reasoning": "",
+                    "iteration_count": 0,
+                    "content": "",
+                    "final_content": "",
+                    "review_feedback": "",
+                    "last_query": ""
+                }
 
-                    result = st.session_state.planning_agent.run(state)
+                # Progress tracking
+                progress_bar = st.progress(0)
+                status_text = st.empty()
 
-                    st.success("✅ 文档大纲生成完成！")
+                # Run workflow
+                status_text.text("正在规划文档结构...")
+                progress_bar.progress(10)
+
+                result = None
+                step_count = 0
+                max_steps = 50  # Safety limit
+
+                for state in st.session_state.workflow.stream(initial_state):
+                    step_count += 1
+                    if step_count > max_steps:
+                        st.warning("⚠️ 达到最大步骤限制，停止生成")
+                        break
+
+                    # Update progress based on current section
+                    if 'current_section' in state and 'sections' in state:
+                        sections = state.get('sections', [])
+                        current = state.get('current_section', 0)
+                        if len(sections) > 0:
+                            progress = min(90, 10 + int(80 * current / len(sections)))
+                            progress_bar.progress(progress)
+                            status_text.text(f"正在处理章节 {current}/{len(sections)}...")
+
+                    result = state
+
+                progress_bar.progress(100)
+                status_text.text("生成完成！")
+
+                if result and 'final_content' in result:
+                    st.success("✅ 文档生成完成！")
 
                     # Display outline
-                    st.markdown("### 📋 文档大纲")
-                    st.markdown(result['outline'])
+                    if result.get('outline'):
+                        st.markdown("### 📋 文档大纲")
+                        st.markdown(result['outline'])
 
-                    # Display sections
-                    st.markdown("### 📑 章节列表")
-                    for i, section in enumerate(result['sections'], 1):
-                        st.text(f"{i}. {section}")
+                    # Display final content
+                    st.markdown("### 📄 生成的文档")
+                    st.markdown(result['final_content'])
 
-                except Exception as e:
-                    st.error(f"❌ 生成失败: {e}")
-                    logger.error("document_generation_failed", error=str(e))
+                    # Download button
+                    st.download_button(
+                        label="📥 下载文档",
+                        data=result['final_content'],
+                        file_name=f"{doc_type}_{requirement[:20]}.md",
+                        mime="text/markdown"
+                    )
+
+                    # Display cost
+                    cost_report = CostTracker.get_report()
+                    st.info(f"💰 本次生成成本: ${cost_report['total_cost']:.4f}")
+
+                else:
+                    st.error("❌ 生成失败：未获得有效结果")
+
+            except Exception as e:
+                st.error(f"❌ 生成失败: {e}")
+                logger.error("document_generation_failed", error=str(e), exc_info=True)
 
 # Tab 2: Knowledge Base Management
 with tab2:

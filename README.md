@@ -28,6 +28,33 @@ cp .env.example .env
 
 编辑 `.env` 文件，填入你的 API Key：
 
+**使用 OpenAI 格式 API：**
+
+```env
+# 配置所有层级使用 OpenAI 格式 API
+LLM_HIGH_PROVIDER=openai
+LLM_HIGH_MODEL=gpt-4
+LLM_HIGH_TEMPERATURE=0.1
+LLM_HIGH_MAX_TOKENS=4096
+
+LLM_MEDIUM_PROVIDER=openai
+LLM_MEDIUM_MODEL=gpt-4
+LLM_MEDIUM_TEMPERATURE=0.3
+LLM_MEDIUM_MAX_TOKENS=4096
+
+LLM_LIGHT_PROVIDER=openai
+LLM_LIGHT_MODEL=gpt-3.5-turbo
+LLM_LIGHT_TEMPERATURE=0.5
+LLM_LIGHT_MAX_TOKENS=2048
+
+# API 配置
+OPENAI_API_KEY=your-api-key-here
+# 可选：自定义 API 端点（支持 Azure OpenAI、本地部署等）
+# OPENAI_API_BASE=https://your-api-endpoint.com/v1
+```
+
+**或使用 Anthropic API：**
+
 ```env
 ANTHROPIC_API_KEY=your-api-key-here
 ```
@@ -79,26 +106,29 @@ KnotKnot/
 
 ## 🎯 核心功能
 
-### 当前实现（v0.1 - MVP）
+### 当前实现（v0.2 - Agent System）
 
 - ✅ LLM 三层抽象（High/Medium/Light）
 - ✅ 成本追踪
 - ✅ BGE-M3 混合检索
 - ✅ Chroma 向量数据库
 - ✅ Planning Agent（文档规划）
-- ✅ Web UI（基础界面）
+- ✅ Retrieval Agent（检索优化）
+- ✅ Reasoning Agent（推理判断）
+- ✅ Writing Agent（内容生成）
+- ✅ Review Agent（质量审核）
+- ✅ Agentic RAG 工作流（LangGraph）
+- ✅ Web UI（完整界面）
 - ✅ 配置管理
 - ✅ 结构化日志
+- ✅ OpenAI 格式 API 支持
 
 ### 待实现功能
 
-- ⏳ Retrieval Agent（检索优化）
-- ⏳ Reasoning Agent（推理判断）
-- ⏳ Writing Agent（内容生成）
-- ⏳ Review Agent（质量审核）
 - ⏳ 文档摄入模块（Docling 集成）
-- ⏳ Agentic RAG 工作流（LangGraph）
 - ⏳ 文档导出（DOCX/PDF）
+- ⏳ 语义缓存
+- ⏳ 流式输出
 
 ## 🔧 配置说明
 
@@ -137,7 +167,8 @@ MAX_WORKERS=4         # 最大并发数
 2. 输入需求描述
 3. 选择文档类型
 4. 点击"开始生成"
-5. 查看生成的文档大纲
+5. 系统自动执行：规划 → 检索 → 推理 → 撰写 → 审核
+6. 下载生成的完整文档
 
 ### 2. 知识库管理
 

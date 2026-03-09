@@ -82,12 +82,20 @@ class LLMFactory:
                     anthropic_api_key=settings.anthropic_api_key
                 )
             elif provider == "openai":
-                return ChatOpenAI(
-                    model=config["model"],
-                    temperature=config["temperature"],
-                    max_tokens=config["max_tokens"],
-                    openai_api_key=settings.openai_api_key
-                )
+                # Support custom OpenAI-format API
+                kwargs = {
+                    "model": config["model"],
+                    "temperature": config["temperature"],
+                    "max_tokens": config["max_tokens"],
+                }
+
+                if settings.openai_api_key:
+                    kwargs["openai_api_key"] = settings.openai_api_key
+
+                if settings.openai_api_base:
+                    kwargs["openai_api_base"] = settings.openai_api_base
+
+                return ChatOpenAI(**kwargs)
             elif provider == "ollama":
                 from langchain_community.llms import Ollama
                 return Ollama(
