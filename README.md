@@ -1,4 +1,4 @@
-# Agentic RAG Document Generator v2.1
+# KnotKnot - Agentic RAG Document Generator v2.1
 
 基于 Agentic RAG 的多智能体文档生成系统 - 最小可扩展实现
 
