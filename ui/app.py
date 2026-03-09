@@ -137,10 +137,7 @@ with tab1:
                 # Agent execution log
                 st.markdown("### 🤖 Agent 执行日志")
                 log_container = st.container()
-
-                with log_container:
-                    log_placeholder = st.empty()
-                    agent_logs = []
+                agent_logs = []
 
                 # Run workflow
                 status_text.text("正在规划文档结构...")
@@ -149,63 +146,62 @@ with tab1:
                 result = None
                 step_count = 0
                 max_steps = 50  # Safety limit
-                current_agent = None
+                previous_state = {}
 
-                for state in st.session_state.workflow.stream(initial_state):
+                for output in st.session_state.workflow.stream(initial_state):
                     step_count += 1
                     if step_count > max_steps:
                         st.warning("⚠️ 达到最大步骤限制，停止生成")
                         break
 
-                    # Detect which agent just ran by checking state changes
-                    if 'outline' in state and state.get('outline') and current_agent != 'planning':
-                        current_agent = 'planning'
+                    # Get the node name and state from output
+                    # LangGraph stream returns dict with node name as key
+                    node_name = list(output.keys())[0] if output else None
+                    state = output.get(node_name, {}) if node_name else {}
+
+                    # Log agent execution
+                    if node_name == 'planning':
                         agent_logs.append({
                             'agent': '📋 Planning Agent',
                             'status': '完成',
-                            'output': f"生成大纲，共 {len(state.get('sections', []))} 个章节"
+                            'output': f"生成大纲，共 {len(state.get('sections', []))} 个章节\n\n大纲预览:\n{state.get('outline', '')[:200]}..."
                         })
 
-                    elif 'last_query' in state and state.get('last_query') and current_agent != 'retrieval':
-                        current_agent = 'retrieval'
+                    elif node_name == 'retrieval':
                         agent_logs.append({
                             'agent': '🔍 Retrieval Agent',
                             'status': '完成',
-                            'output': f"检索查询: {state.get('last_query', '')[:50]}...\n检索到 {len(state.get('retrieved_docs', []))} 个文档"
+                            'output': f"检索查询: {state.get('last_query', '')}\n检索到 {len(state.get('retrieved_docs', []))} 个文档"
                         })
 
-                    elif 'reasoning' in state and state.get('reasoning') and current_agent != 'reasoning':
-                        current_agent = 'reasoning'
+                    elif node_name == 'reasoning':
                         is_sufficient = state.get('is_sufficient', False)
                         agent_logs.append({
                             'agent': '🧠 Reasoning Agent',
                             'status': '完成',
-                            'output': f"信息{'充分' if is_sufficient else '不足'}\n推理: {state.get('reasoning', '')[:100]}..."
+                            'output': f"信息评估: {'✅ 充分' if is_sufficient else '❌ 不足'}\n迭代次数: {state.get('iteration_count', 0)}\n\n推理:\n{state.get('reasoning', '')[:200]}..."
                         })
 
-                    elif 'content' in state and state.get('content') and len(state.get('content', '')) > 0:
+                    elif node_name == 'writing':
                         sections = state.get('sections', [])
                         current = state.get('current_section', 0)
-                        if current > 0 and current_agent != f'writing_{current}':
-                            current_agent = f'writing_{current}'
-                            agent_logs.append({
-                                'agent': '✍️ Writing Agent',
-                                'status': '完成',
-                                'output': f"完成章节 {current}/{len(sections)}\n内容长度: {len(state.get('content', ''))} 字符"
-                            })
+                        agent_logs.append({
+                            'agent': '✍️ Writing Agent',
+                            'status': '完成',
+                            'output': f"完成章节: {current}/{len(sections)}\n内容长度: {len(state.get('content', ''))} 字符\n\n内容预览:\n{state.get('content', '')[-200:]}"
+                        })
 
-                    elif 'final_content' in state and state.get('final_content') and current_agent != 'review':
-                        current_agent = 'review'
+                    elif node_name == 'review':
                         agent_logs.append({
                             'agent': '✅ Review Agent',
                             'status': '完成',
-                            'output': f"审核完成\n最终文档长度: {len(state.get('final_content', ''))} 字符"
+                            'output': f"审核完成\n最终文档长度: {len(state.get('final_content', ''))} 字符\n反馈: {state.get('review_feedback', '')}"
                         })
 
                     # Update log display
-                    with log_placeholder.container():
-                        for log in agent_logs[-10:]:  # Show last 10 logs
-                            with st.expander(f"{log['agent']} - {log['status']}", expanded=True):
+                    with log_container:
+                        for i, log in enumerate(agent_logs[-10:]):  # Show last 10 logs
+                            with st.expander(f"{log['agent']} - {log['status']}", expanded=(i >= len(agent_logs[-10:]) - 3)):
                                 st.text(log['output'])
 
                     # Update progress based on current section
@@ -218,6 +214,7 @@ with tab1:
                             status_text.text(f"正在处理章节 {current}/{len(sections)}...")
 
                     result = state
+                    previous_state = state
 
                 progress_bar.progress(100)
                 status_text.text("生成完成！")
