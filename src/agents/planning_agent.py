@@ -1,7 +1,7 @@
 """Planning agent for document generation."""
 
 from typing import Dict, Any
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 from src.agents.base_agent import BaseAgent
 from src.llm.factory import LLMTier
