@@ -52,10 +52,17 @@ with st.sidebar:
     # Initialize button
     if st.button("🔄 初始化系统", use_container_width=True):
         try:
+            # Clear existing instances to force reload
+            st.session_state.searcher = None
+            st.session_state.workflow = None
+
             init_components()
             st.success("✅ 系统初始化成功！")
         except Exception as e:
+            import traceback
             st.error(f"❌ 初始化失败: {e}")
+            st.code(traceback.format_exc())
+            logger.error("initialization_failed", error=str(e), exc_info=True)
 
     st.markdown("---")
 

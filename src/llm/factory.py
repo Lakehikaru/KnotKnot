@@ -96,12 +96,6 @@ class LLMFactory:
                     kwargs["openai_api_base"] = settings.openai_api_base
 
                 return ChatOpenAI(**kwargs)
-            elif provider == "ollama":
-                from langchain_community.llms import Ollama
-                return Ollama(
-                    model=config["model"],
-                    temperature=config["temperature"]
-                )
             else:
                 raise ValueError(f"Unknown provider: {provider}")
 
